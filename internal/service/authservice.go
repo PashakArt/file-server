@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/PashakArt/file-server/internal/db/repository"
 	"github.com/PashakArt/file-server/internal/domain"
-	"github.com/PashakArt/file-server/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )

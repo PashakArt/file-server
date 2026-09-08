@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/PashakArt/file-server/internal/domain"
@@ -13,13 +14,16 @@ import (
 
 type AuthHandler struct {
 	authService *service.AuthService
+	adminToken  string
 }
 
 func NewAuthHandler(
 	authService *service.AuthService,
+	adminToken string,
 ) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
+		adminToken:  adminToken,
 	}
 }
 
@@ -39,8 +43,7 @@ func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO добавить админ токен
-	err = validator.ValidateRegister("123", body.Token, body.Login, body.Password)
+	err = validator.ValidateRegister(h.adminToken, body.Token, body.Login, body.Password)
 	if err != nil {
 		types.SendError(w, r, http.StatusBadRequest, err.Error())
 		return
@@ -48,6 +51,11 @@ func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 
 	err = h.authService.Register(r.Context(), body.Login, body.Password)
 	if err != nil {
+		if errors.Is(err, domain.ErrUserAlreadyExists) {
+			types.SendError(w, r, http.StatusConflict, err.Error())
+			return
+		}
+		log.Println(err)
 		types.SendError(w, r, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -78,6 +86,7 @@ func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
 			types.SendError(w, r, http.StatusUnauthorized, "invalid login or password")
 			return
 		}
+		log.Println(err)
 		types.SendError(w, r, http.StatusInternalServerError, "internal server error")
 		return
 	}

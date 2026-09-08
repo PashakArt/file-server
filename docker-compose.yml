@@ -6,18 +6,42 @@ services:
     container_name: file_server_db
     restart: always
     environment:
-      POSTGRES_DB: file_server
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: ${DB_NAME:-file_server}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_password}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - file_server_network
     healthcheck:
-      test: ["CMD-SHELL", "pgisready -U postgres -d file_server"]
-      interval: 5s
-      timeout: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-file_server}"]
+      interval: 3s
+      timeout: 3s
       retries: 5
+
+  migration:
+    image: migrate/migrate
+    container_name: file_server_migration
+    restart: "no"
+    env_file:
+      - .env
+    volumes:
+      - ./internal/db/migrations:/migrations
+    command:
+      - -path=/migrations
+      - -database=postgres://${DB_USER:-postgres}:${DB_PASSWORD:-postgres_password}@postgres:5432/${DB_NAME:-file_server}?sslmode=disable
+      - up
+    networks:
+      - file_server_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+networks:
+  file_server_network:
+    driver: bridge
 
 volumes:
   pgdata:

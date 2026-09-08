@@ -1,2 +1,2 @@
 INSERT INTO users (id, login, password_hash)
-VALUES (%1, %2, %3)
+VALUES ($1, $2, $3)

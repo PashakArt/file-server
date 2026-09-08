@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/PashakArt/file-server/internal/config"
-	"github.com/PashakArt/file-server/internal/repository"
+	"github.com/PashakArt/file-server/internal/db/repository"
 	"github.com/PashakArt/file-server/internal/service"
 	"github.com/PashakArt/file-server/internal/transport/http/handler"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -31,7 +31,7 @@ func main() {
 
 	userRepo := repository.NewUserRepository(dbPool)
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, cfg.AdminToken)
 
 	mux := http.NewServeMux()
 	authHandler.RegisterRoutes(mux)

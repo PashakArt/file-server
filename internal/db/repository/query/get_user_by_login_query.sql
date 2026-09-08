@@ -1,3 +1,3 @@
 SELECT id, login, password_hash
 FROM users
-where id = $1
+where login = $1
