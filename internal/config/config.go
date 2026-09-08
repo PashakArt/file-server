@@ -3,15 +3,24 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
+
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
+}
 
 type Config struct {
 	JWTSecret  string
 	AdminToken string
 	HttpPort   string
 	DBUrl      string
+	Redis      RedisConfig
 }
 
 func Load() (*Config, error) {
@@ -35,7 +44,12 @@ func Load() (*Config, error) {
 		DBUrl:      dbUrl,
 		JWTSecret:  getEnv("JWT_SECRET", "default_secret"),
 		AdminToken: getEnv("ADMIN_TOKEN", "default_admin_token"),
-	}
+		Redis: RedisConfig{
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       getEnvAsInt("REDIS_DB", 0),
+		}}
 
 	return cfg, nil
 }
@@ -44,6 +58,15 @@ func getEnv(key, defaultValue string) string {
 	value, ok := os.LookupEnv(key)
 	if ok {
 		return value
+	}
+	return defaultValue
+}
+
+func getEnvAsInt(key string, defaultValue int) int {
+	valueStr, ok := os.LookupEnv(key)
+	if ok {
+		v, _ := strconv.Atoi(valueStr)
+		return v
 	}
 	return defaultValue
 }

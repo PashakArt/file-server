@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/PashakArt/file-server/internal/config"
+	"github.com/PashakArt/file-server/internal/db/redis"
 	"github.com/PashakArt/file-server/internal/db/repository"
 	"github.com/PashakArt/file-server/internal/service"
 	"github.com/PashakArt/file-server/internal/transport/http/handler"
@@ -28,6 +29,12 @@ func main() {
 		log.Fatalf("unable to connect to database: %v", err)
 	}
 	defer dbPool.Close()
+
+	rdb, err := redis.NewRedisClient(*cfg)
+	if err != nil {
+		log.Fatalf("redis error: %v", err)
+	}
+	defer rdb.Close()
 
 	userRepo := repository.NewUserRepository(dbPool)
 	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
