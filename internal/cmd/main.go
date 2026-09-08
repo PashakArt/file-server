@@ -1,0 +1,46 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/PashakArt/file-server/internal/config"
+	"github.com/PashakArt/file-server/internal/repository"
+	"github.com/PashakArt/file-server/internal/service"
+	"github.com/PashakArt/file-server/internal/transport/http/handler"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	dbPool, err := pgxpool.New(ctx, cfg.DBUrl)
+	if err != nil {
+		log.Fatalf("unable to connect to database: %v", err)
+	}
+	defer dbPool.Close()
+
+	userRepo := repository.NewUserRepository(dbPool)
+	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
+	authHandler := handler.NewAuthHandler(authService)
+
+	mux := http.NewServeMux()
+	authHandler.RegisterRoutes(mux)
+
+	addr := fmt.Sprintf(":%s", cfg.HttpPort)
+	log.Printf("Server running on http://localhost%s", addr)
+
+	err = http.ListenAndServe(addr, mux)
+	if err != nil {
+		log.Fatalf("server failed to start: %v", err)
+	}
+}

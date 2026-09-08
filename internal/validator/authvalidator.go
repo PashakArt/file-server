@@ -7,8 +7,6 @@ import (
 	"github.com/PashakArt/file-server/internal/domain"
 )
 
-const ()
-
 func ValidateRegister(adminToken, token, login, password string) error {
 	if token != adminToken {
 		return domain.ErrTokenInvalid
@@ -58,22 +56,20 @@ func IsValidPassword(password string) bool {
 		hasLower  = false
 		hasUpper  = false
 	)
+
 	for _, ch := range password {
 		if unicode.IsSpace(ch) {
 			return false
 		}
 
-		switch {
-		case isLatinLetter(ch) && unicode.IsLower(ch):
-			hasLower = true
-		case isLatinLetter(ch) && unicode.IsUpper(ch):
-			hasUpper = true
-		case unicode.IsDigit(ch):
+		if unicode.IsDigit(ch) {
 			hasDigit = true
-		case !unicode.In(ch, unicode.Latin) && !unicode.IsDigit(ch):
+		} else if isLatinLetter(ch) && unicode.IsLower(ch) {
+			hasLower = true
+		} else if isLatinLetter(ch) && unicode.IsUpper(ch) {
+			hasUpper = true
+		} else {
 			hasSymbol = true
-		default:
-			return false
 		}
 	}
 
