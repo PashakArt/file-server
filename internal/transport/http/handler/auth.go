@@ -1,0 +1,92 @@
+package handler
+
+import (
+	"encoding/json"
+	"errors"
+	"net/http"
+
+	"github.com/PashakArt/file-server/internal/domain"
+	"github.com/PashakArt/file-server/internal/service"
+	"github.com/PashakArt/file-server/internal/transport/http/types"
+	"github.com/PashakArt/file-server/internal/validator"
+)
+
+type AuthHandler struct {
+	authService *service.AuthService
+}
+
+func NewAuthHandler(
+	authService *service.AuthService,
+) *AuthHandler {
+	return &AuthHandler{
+		authService: authService,
+	}
+}
+
+func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /api/register", h.register)
+	mux.HandleFunc("POST /api/auth", h.login)
+	mux.HandleFunc("DELETE /api/auth", h.logout)
+
+}
+
+func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
+	var body types.RegisterBody
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		types.SendError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	// TODO добавить админ токен
+	err = validator.ValidateRegister("123", body.Token, body.Login, body.Password)
+	if err != nil {
+		types.SendError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = h.authService.Register(r.Context(), body.Login, body.Password)
+	if err != nil {
+		types.SendError(w, r, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	types.SendData(w, r, map[string]string{
+		"login": body.Login,
+	})
+}
+
+func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
+	var body types.LoginBody
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		types.SendError(w, r, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	err = validator.ValidateLogin(body.Login, body.Password)
+	if err != nil {
+		types.SendError(w, r, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	token, err := h.authService.Login(r.Context(), body.Login, body.Password)
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidCredentials) {
+			types.SendError(w, r, http.StatusUnauthorized, "invalid login or password")
+			return
+		}
+		types.SendError(w, r, http.StatusInternalServerError, "internal server error")
+		return
+	}
+
+	types.SendData(w, r, token)
+}
+
+func (h *AuthHandler) logout(w http.ResponseWriter, r *http.Request) {
+	context := r.Context()
+
+	h.authService.Logout(context)
+}
