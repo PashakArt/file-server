@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -21,6 +22,7 @@ type Config struct {
 	HttpPort   string
 	DBUrl      string
 	Redis      RedisConfig
+	TokenTTL   time.Duration
 }
 
 func Load() (*Config, error) {
@@ -44,6 +46,7 @@ func Load() (*Config, error) {
 		DBUrl:      dbUrl,
 		JWTSecret:  getEnv("JWT_SECRET", "default_secret"),
 		AdminToken: getEnv("ADMIN_TOKEN", "default_admin_token"),
+		TokenTTL:   getEnvAsDuration("TOKEN_TTL", 24*time.Hour),
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),
 			Port:     getEnv("REDIS_PORT", "6379"),
@@ -69,4 +72,18 @@ func getEnvAsInt(key string, defaultValue int) int {
 		return v
 	}
 	return defaultValue
+}
+
+func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
+	valueStr, ok := os.LookupEnv(key)
+	if !ok || valueStr == "" {
+		return defaultValue
+	}
+
+	val, err := time.ParseDuration(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+
+	return val
 }

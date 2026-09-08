@@ -3,22 +3,26 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/PashakArt/file-server/internal/db/repository"
 	"github.com/PashakArt/file-server/internal/domain"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
-	userRepo  *repository.UserRepository
-	jwtSecret []byte
+	userRepo    *repository.UserRepository
+	redisClient *redis.Client
+	tokenTTL    time.Duration
 }
 
-func NewAuthService(ur *repository.UserRepository, jwtSecret string) *AuthService {
+func NewAuthService(ur *repository.UserRepository, redisClient *redis.Client, tokenTTL time.Duration) *AuthService {
 	return &AuthService{
-		userRepo:  ur,
-		jwtSecret: []byte(jwtSecret),
+		userRepo:    ur,
+		redisClient: redisClient,
+		tokenTTL:    tokenTTL,
 	}
 }
 
@@ -60,17 +64,14 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (string
 		return "", domain.ErrInvalidCredentials
 	}
 
-	claims := jwt.MapClaims{
-		"sub": user.ID,
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(s.jwtSecret)
+	token := uuid.New().String()
+	redisKey := fmt.Sprintf("token:%s", token)
+	err = s.redisClient.Set(ctx, redisKey, user.ID, s.tokenTTL).Err()
 	if err != nil {
-		return "", fmt.Errorf("AuthService:Login:token.SignedString - %w", err)
+		return "", fmt.Errorf("AuthService:Login:redisClient.Set - %w", err)
 	}
 
-	return signedToken, nil
+	return token, nil
 }
 
 func (s *AuthService) Logout(ctx context.Context) error {

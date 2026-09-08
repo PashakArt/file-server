@@ -37,7 +37,7 @@ func main() {
 	defer rdb.Close()
 
 	userRepo := repository.NewUserRepository(dbPool)
-	authService := service.NewAuthService(userRepo, cfg.JWTSecret)
+	authService := service.NewAuthService(userRepo, rdb, cfg.TokenTTL)
 	authHandler := handler.NewAuthHandler(authService, cfg.AdminToken)
 
 	mux := http.NewServeMux()

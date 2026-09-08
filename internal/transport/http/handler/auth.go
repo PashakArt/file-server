@@ -91,7 +91,9 @@ func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	types.SendData(w, r, token)
+	types.SendData(w, r, map[string]string{
+		"token": token,
+	})
 }
 
 func (h *AuthHandler) logout(w http.ResponseWriter, r *http.Request) {
