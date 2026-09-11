@@ -30,7 +30,7 @@ func NewAuthHandler(
 func (h *AuthHandler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/register", h.register)
 	mux.HandleFunc("POST /api/auth", h.login)
-	mux.HandleFunc("DELETE /api/auth", h.logout)
+	mux.HandleFunc("DELETE /api/auth/{token}", h.logout)
 
 }
 
@@ -60,7 +60,7 @@ func (h *AuthHandler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	types.SendData(w, r, map[string]string{
+	types.SendResponse(w, r, map[string]string{
 		"login": body.Login,
 	})
 }
@@ -91,13 +91,26 @@ func (h *AuthHandler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	types.SendData(w, r, map[string]string{
+	types.SendResponse(w, r, map[string]string{
 		"token": token,
 	})
 }
 
 func (h *AuthHandler) logout(w http.ResponseWriter, r *http.Request) {
-	context := r.Context()
+	token := r.PathValue("token")
+	if token == "" {
+		types.SendError(w, r, http.StatusBadRequest, "token parameter is required")
+		return
+	}
 
-	h.authService.Logout(context)
+	err := h.authService.Logout(r.Context(), token)
+	if err != nil {
+		log.Println(err)
+		types.SendError(w, r, http.StatusInternalServerError, "failed to logout")
+		return
+	}
+	types.SendResponse(w, r,
+		map[string]bool{
+			"token": true,
+		})
 }

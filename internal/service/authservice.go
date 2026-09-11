@@ -65,8 +65,7 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (string
 	}
 
 	token := uuid.New().String()
-	redisKey := fmt.Sprintf("token:%s", token)
-	err = s.redisClient.Set(ctx, redisKey, user.ID, s.tokenTTL).Err()
+	err = s.redisClient.Set(ctx, getRedisKey(token), user.ID, s.tokenTTL).Err()
 	if err != nil {
 		return "", fmt.Errorf("AuthService:Login:redisClient.Set - %w", err)
 	}
@@ -74,6 +73,14 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (string
 	return token, nil
 }
 
-func (s *AuthService) Logout(ctx context.Context) error {
+func (s *AuthService) Logout(ctx context.Context, token string) error {
+	err := s.redisClient.Del(ctx, getRedisKey(token)).Err()
+	if err != nil {
+		return fmt.Errorf("AuthService:Logout:redisClient.Del - %w", err)
+	}
 	return nil
+}
+
+func getRedisKey(token string) string {
+	return fmt.Sprintf("token:%s", token)
 }

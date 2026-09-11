@@ -31,7 +31,7 @@ func SendError(w http.ResponseWriter, r *http.Request, code int, errText string)
 	})
 }
 
-func SendData(w http.ResponseWriter, r *http.Request, payload interface{}) {
+func SendResponse(w http.ResponseWriter, r *http.Request, payload interface{}) {
 	prepareResponse(w, r, http.StatusOK, APIResponse{
 		Response: payload,
 	})
