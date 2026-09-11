@@ -17,12 +17,13 @@ type RedisConfig struct {
 }
 
 type Config struct {
-	JWTSecret  string
-	AdminToken string
-	HttpPort   string
-	DBUrl      string
-	Redis      RedisConfig
-	TokenTTL   time.Duration
+	JWTSecret             string
+	AdminToken            string
+	HttpPort              string
+	DBUrl                 string
+	Redis                 RedisConfig
+	TokenTTL              time.Duration
+	MaxUploadBodySizeByte int
 }
 
 func Load() (*Config, error) {
@@ -42,11 +43,12 @@ func Load() (*Config, error) {
 	)
 
 	cfg := &Config{
-		HttpPort:   getEnv("HTTP_PORT", "8080"),
-		DBUrl:      dbUrl,
-		JWTSecret:  getEnv("JWT_SECRET", "default_secret"),
-		AdminToken: getEnv("ADMIN_TOKEN", "default_admin_token"),
-		TokenTTL:   getEnvAsDuration("TOKEN_TTL", 24*time.Hour),
+		HttpPort:              getEnv("HTTP_PORT", "8080"),
+		DBUrl:                 dbUrl,
+		JWTSecret:             getEnv("JWT_SECRET", "default_secret"),
+		AdminToken:            getEnv("ADMIN_TOKEN", "default_admin_token"),
+		TokenTTL:              getEnvAsDuration("TOKEN_TTL", 24*time.Hour),
+		MaxUploadBodySizeByte: getEnvAsInt("MAX_UPLOAD_FILE_SIZE_MB", 32),
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),
 			Port:     getEnv("REDIS_PORT", "6379"),

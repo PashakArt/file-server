@@ -16,6 +16,11 @@ type APIResponse struct {
 	Data     interface{} `json:"data,omitempty"`
 }
 
+type UploadDocResponse struct {
+	JSON json.RawMessage `json:"json,omitempty"`
+	File string          `json:"file,omitempty"`
+}
+
 func prepareResponse(w http.ResponseWriter, r *http.Request, code int, resp APIResponse) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
@@ -34,5 +39,11 @@ func SendError(w http.ResponseWriter, r *http.Request, code int, errText string)
 func SendResponse(w http.ResponseWriter, r *http.Request, payload interface{}) {
 	prepareResponse(w, r, http.StatusOK, APIResponse{
 		Response: payload,
+	})
+}
+
+func SendData(w http.ResponseWriter, r *http.Request, payload interface{}) {
+	prepareResponse(w, r, http.StatusOK, APIResponse{
+		Data: payload,
 	})
 }
