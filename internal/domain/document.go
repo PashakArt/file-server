@@ -3,17 +3,18 @@ package domain
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Document struct {
-	ID         string          `json:"id" db:"id"`
-	Name       string          `json:"name" db:"name"`
-	Mime       string          `json:"mime" db:"mime"`
-	IsFile     bool            `json:"file" db:"is_file"`
-	IsPublic   bool            `json:"public" db:"is_public"`
-	FilePath   string          `json:"file_path,omitempty" db:"file_path"`
-	JSONData   json.RawMessage `json:"json,omitempty" db:"json_data"`
-	OwnerLogin string          `json:"owner_login" db:"owner_login"`
-	Grant      []string        `json:"grant" db:"grant"`
-	Created    time.Time       `json:"created" db:"created_at"`
+	ID       uuid.UUID       `json:"id" db:"id"`
+	OwnerID  uuid.UUID       `json:"owner_id" db:"owner_id"`
+	Name     string          `json:"name" db:"name"`
+	Mime     string          `json:"mime" db:"mime"`
+	HasFile  bool            `json:"has_file" db:"has_file"`
+	IsPublic bool            `json:"public" db:"is_public"`
+	FilePath string          `json:"file_path,omitempty" db:"file_path"`
+	JSONData json.RawMessage `json:"json,omitempty" db:"json_data"`
+	Created  time.Time       `json:"created" db:"created_at"`
 }

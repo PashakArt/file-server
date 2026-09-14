@@ -24,6 +24,7 @@ type Config struct {
 	Redis                 RedisConfig
 	TokenTTL              time.Duration
 	MaxUploadBodySizeByte int
+	UploadDir             string
 }
 
 func Load() (*Config, error) {
@@ -49,6 +50,7 @@ func Load() (*Config, error) {
 		AdminToken:            getEnv("ADMIN_TOKEN", "default_admin_token"),
 		TokenTTL:              getEnvAsDuration("TOKEN_TTL", 24*time.Hour),
 		MaxUploadBodySizeByte: getEnvAsInt("MAX_UPLOAD_FILE_SIZE_MB", 32),
+		UploadDir:             getEnv("UPLOAD_DIR", "files"),
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),
 			Port:     getEnv("REDIS_PORT", "6379"),

@@ -81,6 +81,19 @@ func (s *AuthService) Logout(ctx context.Context, token string) error {
 	return nil
 }
 
+func (s *AuthService) ValidateToken(ctx context.Context, token string) (string, error) {
+	userID, err := s.redisClient.Get(ctx, getRedisKey(token)).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return "", domain.ErrTokenInvalid
+		}
+		return "", fmt.Errorf("AuthService:ValidateToken:redisClient.Get - %w", err)
+	}
+
+	return userID, nil
+
+}
+
 func getRedisKey(token string) string {
 	return fmt.Sprintf("token:%s", token)
 }

@@ -9,7 +9,7 @@ import (
 
 func ValidateRegister(adminToken, token, login, password string) error {
 	if token != adminToken {
-		return domain.ErrTokenInvalid
+		return domain.ErrTokenAdminInvalid
 	}
 
 	return ValidateLogin(login, password)

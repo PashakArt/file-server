@@ -12,6 +12,7 @@ import (
 	"github.com/PashakArt/file-server/internal/db/repository"
 	"github.com/PashakArt/file-server/internal/service"
 	"github.com/PashakArt/file-server/internal/transport/http/handler"
+	"github.com/PashakArt/file-server/internal/transport/http/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -37,11 +38,19 @@ func main() {
 	defer rdb.Close()
 
 	userRepo := repository.NewUserRepository(dbPool)
+	docRepo := repository.NewDocRepository(dbPool)
+
 	authService := service.NewAuthService(userRepo, rdb, cfg.TokenTTL)
+	docService := service.NewDocService(cfg, docRepo, userRepo)
+
+	authMiddleware := middleware.AuthMiddleware(authService)
+
 	authHandler := handler.NewAuthHandler(authService, cfg.AdminToken)
+	docHandler := handler.NewDocsHandler(docService, cfg)
 
 	mux := http.NewServeMux()
 	authHandler.RegisterRoutes(mux)
+	docHandler.RegisterRoutes(mux, authMiddleware)
 
 	addr := fmt.Sprintf(":%s", cfg.HttpPort)
 	log.Printf("Server running on http://localhost%s", addr)

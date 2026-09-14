@@ -7,6 +7,7 @@ import (
 
 	"github.com/PashakArt/file-server/internal/config"
 	"github.com/PashakArt/file-server/internal/service"
+	"github.com/PashakArt/file-server/internal/transport/http/middleware"
 	"github.com/PashakArt/file-server/internal/transport/http/types"
 )
 
@@ -25,8 +26,9 @@ func NewDocsHandler(
 	}
 }
 
-func (h *DocHandler) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /api/docs", h.upload)
+func (h *DocHandler) RegisterRoutes(mux *http.ServeMux, authMiddleware middleware.Middleware) {
+	mux.Handle("POST /api/docs", authMiddleware(http.HandlerFunc(h.upload)))
+	// mux.HandleFunc("POST /api/docs", h.upload)
 	mux.HandleFunc("GET /api/docs", h.get)
 	mux.HandleFunc("GET /api/docs/{id}", h.getById)
 	mux.HandleFunc("DELETE /api/docs/{id}", h.deleteById)
@@ -34,6 +36,12 @@ func (h *DocHandler) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func (h *DocHandler) upload(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		types.SendError(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
 	r.Body = http.MaxBytesReader(w, r.Body, int64(h.cfg.MaxUploadBodySizeByte))
 	err := r.ParseMultipartForm(int64(h.cfg.MaxUploadBodySizeByte))
 	if err != nil {
@@ -71,7 +79,7 @@ func (h *DocHandler) upload(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal([]byte(jsonStr), &jsonField)
 	}
 
-	err = h.docService.Upload(r.Context(), file, &metaField, &jsonField)
+	err = h.docService.Upload(r.Context(), userID, file, &metaField, &jsonField)
 	if err != nil {
 		types.SendError(w, r, http.StatusInternalServerError, "Internal server error")
 		log.Println(err)

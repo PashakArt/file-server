@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	//go:embed query/get_user_by_login_query.sql
+	//go:embed query/get_user_by_login.sql
 	getByLoginQuery string
 
-	//go:embed query/create_user_query.sql
+	//go:embed query/create_user.sql
 	createQuery string
 )
 
@@ -56,4 +56,8 @@ func (r *UserRepository) Create(ctx context.Context, login, passwordHash string)
 	}
 
 	return &userID, nil
+}
+
+func (r *UserRepository) GetIDsByLogins(ctx context.Context, logins []string) ([]uuid.UUID, error) {
+	return nil, nil
 }
