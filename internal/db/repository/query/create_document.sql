@@ -2,7 +2,7 @@ INSERT INTO documents (
     id, 
     owner_id, 
     name, 
-    mime_type, 
+    mime, 
     has_file, 
     is_public, 
     json_data, 

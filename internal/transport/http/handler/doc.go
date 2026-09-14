@@ -11,6 +11,7 @@ import (
 	"github.com/PashakArt/file-server/internal/service"
 	"github.com/PashakArt/file-server/internal/transport/http/middleware"
 	"github.com/PashakArt/file-server/internal/transport/http/types"
+	"github.com/PashakArt/file-server/pkg/validator"
 )
 
 type DocHandler struct {
@@ -80,6 +81,11 @@ func (h *DocHandler) upload(w http.ResponseWriter, r *http.Request) {
 		defer f.Close()
 
 		file = f
+	}
+	err = validator.ValidateStruct(&metaField)
+	if err != nil {
+		types.SendError(w, r, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	var jsonField json.RawMessage

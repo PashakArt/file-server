@@ -11,10 +11,10 @@ type RegisterBody struct {
 }
 
 type DocMeta struct {
-	Name   string   `json:"name"`
+	Name   string   `json:"name" validate:"required,min=1,max=255"`
 	File   bool     `json:"file"`
 	Public bool     `json:"public"`
 	Token  string   `json:"token"`
-	Mime   string   `json:"mime"`
-	Grant  []string `json:"grant"`
+	Mime   string   `json:"mime" validate:"omitempty,max=100"`
+	Grant  []string `json:"grant" validate:"omitempty,dive,required,alphanum"`
 }

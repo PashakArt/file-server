@@ -17,6 +17,9 @@ var (
 
 	//go:embed query/create_user.sql
 	createQuery string
+
+	//go:embed query/get_ids_by_logins.sql
+	getIDsByLogins string
 )
 
 type UserRepository struct {
@@ -59,5 +62,25 @@ func (r *UserRepository) Create(ctx context.Context, login, passwordHash string)
 }
 
 func (r *UserRepository) GetIDsByLogins(ctx context.Context, logins []string) ([]uuid.UUID, error) {
-	return nil, nil
+	rows, err := r.dbPool.Query(ctx, getIDsByLogins, logins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var userIDs []uuid.UUID
+	for rows.Next() {
+		var userID uuid.UUID
+
+		err = rows.Scan(
+			&userID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		userIDs = append(userIDs, userID)
+	}
+
+	return userIDs, nil
 }

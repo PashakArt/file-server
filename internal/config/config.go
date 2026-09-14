@@ -42,6 +42,7 @@ func Load() (*Config, error) {
 		getEnv("DB_NAME", "file_server"),
 		getEnv("DB_SSLMODE", "disable"),
 	)
+	maxMb := getEnvAsInt("MAX_UPLOAD_BODY_SIZE_MB", 32)
 
 	cfg := &Config{
 		HttpPort:              getEnv("HTTP_PORT", "8080"),
@@ -49,7 +50,7 @@ func Load() (*Config, error) {
 		JWTSecret:             getEnv("JWT_SECRET", "default_secret"),
 		AdminToken:            getEnv("ADMIN_TOKEN", "default_admin_token"),
 		TokenTTL:              getEnvAsDuration("TOKEN_TTL", 24*time.Hour),
-		MaxUploadBodySizeByte: getEnvAsInt("MAX_UPLOAD_FILE_SIZE_MB", 32),
+		MaxUploadBodySizeByte: maxMb * 1024 * 1024,
 		UploadDir:             getEnv("UPLOAD_DIR", "files"),
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),

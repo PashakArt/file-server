@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS documents (
     json_data JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
 
-    CONSTRAINT fk_documents_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE
+    CONSTRAINT fk_documents_owner FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS documents_users (

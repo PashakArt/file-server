@@ -41,6 +41,22 @@ func (r *DocRepository) SaveDocumentWithGrants(
 	}
 	defer tx.Rollback(ctx)
 
+	_, err = tx.Exec(
+		ctx,
+		createDocumentQuery,
+		doc.ID,
+		doc.OwnerID,
+		doc.Name,
+		doc.Mime,
+		doc.HasFile,
+		doc.IsPublic,
+		doc.JSONData,
+		doc.FilePath,
+	)
+	if err != nil {
+		return err
+	}
+
 	batch := &pgx.Batch{}
 	for _, userID := range userIds {
 		batch.Queue(createGrantsQuery, doc.ID, userID)

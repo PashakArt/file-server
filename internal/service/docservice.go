@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/PashakArt/file-server/internal/config"
 	"github.com/PashakArt/file-server/internal/db/repository"
@@ -57,7 +58,20 @@ func (s *DocService) Upload(
 
 	var filePath string
 	if meta.File {
-		filePath = path.Join(s.cfg.UploadDir, docID.String())
+		if meta.Mime == "" {
+			detectedMime := mime.TypeByExtension(filepath.Ext(meta.Name))
+			if detectedMime != "" {
+				meta.Mime = detectedMime
+			} else {
+				meta.Mime = "application/octet-stream"
+			}
+		}
+
+		if err := os.MkdirAll(s.cfg.UploadDir, 0755); err != nil {
+			return fmt.Errorf("DocService:Upload:os.MkdirAll - %w", err)
+		}
+
+		filePath = filepath.Join(s.cfg.UploadDir, docID.String())
 		dst, err := os.Create(filePath)
 
 		if err != nil {
@@ -76,8 +90,8 @@ func (s *DocService) Upload(
 	document := domain.Document{
 		ID:       docID,
 		Name:     meta.Name,
-		Mime:     meta.Mime,
-		FilePath: filePath,
+		Mime:     &meta.Mime,
+		FilePath: &filePath,
 		IsPublic: meta.Public,
 		HasFile:  meta.File,
 		JSONData: *jsonField,
