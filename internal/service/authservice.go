@@ -65,7 +65,7 @@ func (s *AuthService) Login(ctx context.Context, login, password string) (string
 	}
 
 	token := uuid.New().String()
-	err = s.redisClient.Set(ctx, getRedisKey(token), user.ID, s.tokenTTL).Err()
+	err = s.redisClient.Set(ctx, getRedisKey(token), user.ID.String(), s.tokenTTL).Err()
 	if err != nil {
 		return "", fmt.Errorf("AuthService:Login:redisClient.Set - %w", err)
 	}

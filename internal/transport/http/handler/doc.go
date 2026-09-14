@@ -2,6 +2,8 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"log"
 	"net/http"
 
@@ -45,7 +47,13 @@ func (h *DocHandler) upload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, int64(h.cfg.MaxUploadBodySizeByte))
 	err := r.ParseMultipartForm(int64(h.cfg.MaxUploadBodySizeByte))
 	if err != nil {
-		types.SendError(w, r, http.StatusBadRequest, "Request size exceeds maximum allowed limit")
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			types.SendError(w, r, http.StatusBadRequest, "Request size exceeds maximum allowed limit")
+			return
+		}
+
+		types.SendError(w, r, http.StatusBadRequest, "Invalid multipart form data")
 		return
 	}
 
@@ -62,12 +70,17 @@ func (h *DocHandler) upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, _, err := r.FormFile("file")
-	if err != nil {
-		types.SendError(w, r, http.StatusBadRequest, "invalid file field")
-		return
+	var file io.Reader
+	if metaField.File {
+		f, _, err := r.FormFile("file")
+		if err != nil {
+			types.SendError(w, r, http.StatusBadRequest, "invalid file field")
+			return
+		}
+		defer f.Close()
+
+		file = f
 	}
-	defer file.Close()
 
 	var jsonField json.RawMessage
 	jsonStr := r.FormValue("json")

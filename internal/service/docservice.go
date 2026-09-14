@@ -42,7 +42,7 @@ func (s *DocService) Upload(
 ) error {
 	ownerID, err := uuid.Parse(ownerIDStr)
 	if err != nil {
-		return fmt.Errorf("DocService:Upload:uuid.Parse", err)
+		return fmt.Errorf("DocService:Upload:uuid.Parse - %w", err)
 	}
 
 	var userIds []uuid.UUID
@@ -69,7 +69,7 @@ func (s *DocService) Upload(
 
 		if err != nil {
 			os.Remove(filePath)
-			return fmt.Errorf("DocService:Upload:io.Copy", err)
+			return fmt.Errorf("DocService:Upload:io.Copy - %w", err)
 		}
 	}
 
@@ -87,14 +87,16 @@ func (s *DocService) Upload(
 	if len(userIds) > 0 {
 		err = s.repo.SaveDocumentWithGrants(ctx, &document, userIds)
 		if err != nil {
-			return fmt.Errorf("DocService:Upload:repo.SaveDocumentWithGrants", err)
+			os.Remove(filePath)
+			return fmt.Errorf("DocService:Upload:repo.SaveDocumentWithGrants - %w", err)
 		}
 		return nil
 	}
 
 	err = s.repo.SaveDocument(ctx, &document)
 	if err != nil {
-		return fmt.Errorf("DocService:Upload:repo.SaveDocument", err)
+		os.Remove(filePath)
+		return fmt.Errorf("DocService:Upload:repo.SaveDocument - %w", err)
 	}
 	return nil
 }
