@@ -9,7 +9,7 @@ import (
 	"github.com/PashakArt/file-server/internal/domain"
 	"github.com/PashakArt/file-server/internal/service"
 	"github.com/PashakArt/file-server/internal/transport/http/types"
-	"github.com/PashakArt/file-server/internal/validator"
+	"github.com/PashakArt/file-server/pkg/validator"
 )
 
 type AuthHandler struct {
