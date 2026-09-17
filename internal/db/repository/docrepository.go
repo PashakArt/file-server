@@ -24,6 +24,9 @@ var (
 
 	//go:embed query/get_grants_by_doc_id.sql
 	getGrantsByDocIDsQuery string
+
+	//go:embed query/get_document_by_id.sql
+	getDocumentByIdQuery string
 )
 
 type DocRepository struct {
@@ -209,4 +212,27 @@ func (r *DocRepository) GetDocuments(ctx context.Context, params GetDocsParams) 
 	}
 
 	return docs, rows.Err()
+}
+
+func (r *DocRepository) GetByID(ctx context.Context, docID, userID uuid.UUID) (*domain.Document, error) {
+	var d domain.Document
+	err := r.dbPool.QueryRow(ctx, getDocumentByIdQuery, docID, userID).Scan(
+		&d.ID,
+		&d.OwnerID,
+		&d.Name,
+		&d.Mime,
+		&d.HasFile,
+		&d.IsPublic,
+		&d.FilePath,
+		&d.JSONData,
+		&d.Created,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrDocNotFound
+		}
+		return nil, err
+	}
+
+	return &d, nil
 }

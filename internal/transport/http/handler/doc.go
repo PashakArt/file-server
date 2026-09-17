@@ -177,4 +177,42 @@ func (h *DocHandler) get(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *DocHandler) getById(w http.ResponseWriter, r *http.Request) {}
+func (h *DocHandler) getById(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		types.SendError(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	docID := r.PathValue("id")
+	doc, err := h.docService.GetByID(r.Context(), docID, userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrDocNotFound) {
+			types.SendError(w, r, http.StatusNotFound, "document not found")
+			return
+		}
+		types.SendError(w, r, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	if doc.HasFile {
+		mime := "application/octet-stream"
+		if doc.Mime != nil && *doc.Mime != "" {
+			mime = *doc.Mime
+		}
+
+		w.Header().Set("Content-Type", mime)
+
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		http.ServeFile(w, r, *doc.FilePath)
+		return
+	}
+
+	types.SendData(w, r, types.GetDocResponse{
+		Data: doc.JSONData,
+	})
+}

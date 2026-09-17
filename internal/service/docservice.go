@@ -202,3 +202,22 @@ func (s *DocService) GetList(
 
 	return result, nil
 }
+
+func (s *DocService) GetByID(ctx context.Context, rawDocID, rawUserID string) (*domain.Document, error) {
+	docID, err := uuid.Parse(rawDocID)
+	if err != nil {
+		return nil, fmt.Errorf("DocService:GetByID:uuid.Parse id - %w", err)
+	}
+
+	userID, err := uuid.Parse(rawUserID)
+	if err != nil {
+		return nil, fmt.Errorf("DocService:GetByID:uuid.Parse userID - %w", err)
+	}
+
+	doc, err := s.repo.GetByID(ctx, docID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("DocService.GetByID: %w", err)
+	}
+
+	return doc, nil
+}
