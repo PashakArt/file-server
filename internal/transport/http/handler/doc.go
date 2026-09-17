@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/PashakArt/file-server/internal/config"
 	"github.com/PashakArt/file-server/internal/domain"
@@ -141,6 +142,39 @@ func (h *DocHandler) deleteById(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *DocHandler) get(w http.ResponseWriter, r *http.Request) {}
+func (h *DocHandler) get(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		types.SendError(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	query := r.URL.Query()
+	limit := 10
+	if limitStr := query.Get("limit"); limitStr != "" {
+		parsedLimit, err := strconv.Atoi(limitStr)
+		if err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	params := service.GetListParams{
+		Limit:       limit,
+		TargetLogin: query.Get("login"),
+		FilterKey:   query.Get("key"),
+		FilterVal:   query.Get("value"),
+	}
+
+	docs, err := h.docService.GetList(r.Context(), userID, params)
+	if err != nil {
+		log.Printf("DocHandler.get: %v", err)
+		types.SendError(w, r, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	types.SendData(w, r, service.GetDocsResponse{
+		Docs: docs,
+	})
+}
 
 func (h *DocHandler) getById(w http.ResponseWriter, r *http.Request) {}

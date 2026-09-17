@@ -141,3 +141,64 @@ func (s *DocService) DeleteById(ctx context.Context, idStr string, ownerIDStr st
 
 	return nil
 }
+
+func (s *DocService) GetList(
+	ctx context.Context,
+	userIDStr string,
+	params GetListParams,
+) ([]DocResponse, error) {
+	repoParams := repository.GetDocsParams{
+		Limit:     params.Limit,
+		FilterKey: params.FilterKey,
+		FilterVal: params.FilterVal,
+	}
+
+	if params.TargetLogin == "" {
+		uid, err := uuid.Parse(userIDStr)
+		if err != nil {
+			return nil, fmt.Errorf("DocService.GetList: invalid uuid: %w", err)
+		}
+		repoParams.OwnerID = &uid
+	} else {
+		repoParams.TargetLogin = params.TargetLogin
+	}
+
+	docs, err := s.repo.GetDocuments(ctx, repoParams)
+	if err != nil {
+		return nil, fmt.Errorf("DocService:GetList:repo.GetDocuments: %w", err)
+	}
+
+	if len(docs) == 0 {
+		return []DocResponse{}, nil
+	}
+
+	docIDs := make([]uuid.UUID, len(docs))
+	for i, d := range docs {
+		docIDs[i] = d.ID
+	}
+
+	grantsMap, err := s.repo.GetGrantsByDocIDs(ctx, docIDs)
+	if err != nil {
+		return nil, fmt.Errorf("DocService.GetList: grants: %w", err)
+	}
+
+	result := make([]DocResponse, 0, len(docs))
+	for _, doc := range docs {
+		grants := grantsMap[doc.ID]
+		if grants == nil {
+			grants = []string{}
+		}
+
+		result = append(result, DocResponse{
+			ID:      doc.ID.String(),
+			Name:    doc.Name,
+			Mime:    doc.Mime,
+			File:    doc.HasFile,
+			Public:  doc.IsPublic,
+			Created: doc.Created.Format("2006-01-02 15:04:05"),
+			Grant:   grants,
+		})
+	}
+
+	return result, nil
+}
