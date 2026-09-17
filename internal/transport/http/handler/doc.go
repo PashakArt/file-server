@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/PashakArt/file-server/internal/config"
+	"github.com/PashakArt/file-server/internal/domain"
 	"github.com/PashakArt/file-server/internal/service"
 	"github.com/PashakArt/file-server/internal/transport/http/middleware"
 	"github.com/PashakArt/file-server/internal/transport/http/types"
@@ -31,10 +32,9 @@ func NewDocsHandler(
 
 func (h *DocHandler) RegisterRoutes(mux *http.ServeMux, authMiddleware middleware.Middleware) {
 	mux.Handle("POST /api/docs", authMiddleware(http.HandlerFunc(h.upload)))
-	// mux.HandleFunc("POST /api/docs", h.upload)
-	mux.HandleFunc("GET /api/docs", h.get)
-	mux.HandleFunc("GET /api/docs/{id}", h.getById)
-	mux.HandleFunc("DELETE /api/docs/{id}", h.deleteById)
+	mux.Handle("DELETE /api/docs/{id}", authMiddleware(http.HandlerFunc(h.deleteById)))
+	mux.Handle("GET /api/docs", authMiddleware(http.HandlerFunc(h.get)))
+	mux.Handle("GET /api/docs/{id}", authMiddleware(http.HandlerFunc(h.getById)))
 
 }
 
@@ -111,8 +111,36 @@ func (h *DocHandler) upload(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *DocHandler) deleteById(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserID(r.Context())
+	if !ok {
+		types.SendError(w, r, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	docID := r.PathValue("id")
+	if docID == "" {
+		types.SendError(w, r, http.StatusBadRequest, "Document ID is required")
+		return
+	}
+
+	err := h.docService.DeleteById(r.Context(), docID, userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrDocNotFound) {
+			types.SendError(w, r, http.StatusNotFound, domain.ErrDocNotFound.Error())
+			return
+		}
+
+		log.Printf("DocHandler:deleteById error: %v", err)
+		types.SendError(w, r, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	types.SendResponse(w, r, map[string]bool{
+		docID: true,
+	})
+}
+
 func (h *DocHandler) get(w http.ResponseWriter, r *http.Request) {}
 
 func (h *DocHandler) getById(w http.ResponseWriter, r *http.Request) {}
-
-func (h *DocHandler) deleteById(w http.ResponseWriter, r *http.Request) {}

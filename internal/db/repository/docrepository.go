@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	_ "embed"
+	"errors"
 
 	"github.com/PashakArt/file-server/internal/domain"
 	"github.com/google/uuid"
@@ -16,6 +17,9 @@ var (
 
 	//go:embed query/create_grants.sql
 	createGrantsQuery string
+
+	//go:embed query/delete_document_by_id.sql
+	deleteByIdQuery string
 )
 
 type DocRepository struct {
@@ -88,4 +92,25 @@ func (r *DocRepository) SaveDocument(
 	)
 
 	return err
+}
+
+func (r *DocRepository) DeleteById(ctx context.Context, id uuid.UUID, ownerID uuid.UUID) (*domain.Document, error) {
+	var document domain.Document
+
+	err := r.dbPool.QueryRow(
+		ctx,
+		deleteByIdQuery,
+		id,
+		ownerID,
+	).Scan(&document.HasFile, &document.FilePath)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrDocNotFound
+		}
+
+		return nil, err
+	}
+
+	return &document, err
 }

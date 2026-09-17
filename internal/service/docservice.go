@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"os"
 	"path/filepath"
@@ -112,5 +113,31 @@ func (s *DocService) Upload(
 		os.Remove(filePath)
 		return fmt.Errorf("DocService:Upload:repo.SaveDocument - %w", err)
 	}
+	return nil
+}
+
+func (s *DocService) DeleteById(ctx context.Context, idStr string, ownerIDStr string) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return fmt.Errorf("DocService:DeleteById:uuid.Parse id - %w", err)
+	}
+
+	ownerID, err := uuid.Parse(ownerIDStr)
+	if err != nil {
+		return fmt.Errorf("DocService:DeleteById:uuid.Parse ownerID - %w", err)
+	}
+
+	doc, err := s.repo.DeleteById(ctx, id, ownerID)
+	if err != nil {
+		return fmt.Errorf("DocService:DeleteById:s.repo.DeleteById - %w", err)
+	}
+
+	if doc.HasFile {
+		err = os.Remove(*doc.FilePath)
+		if err != nil {
+			log.Printf("DocService:DeleteById:os.Remove - %w", err)
+		}
+	}
+
 	return nil
 }
